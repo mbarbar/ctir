@@ -24,6 +24,7 @@
 #include "CodeGenPGO.h"
 #include "ConstantEmitter.h"
 #include "CoverageMappingGen.h"
+#include "CTIR.h"
 #include "TargetInfo.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/CharUnits.h"
@@ -140,7 +141,8 @@ CodeGenModule::CodeGenModule(ASTContext &C, const HeaderSearchOptions &HSO,
     createCUDARuntime();
 
   // Enable TBAA unless it's suppressed. ThreadSanitizer needs TBAA even at O0.
-  if (LangOpts.Sanitize.has(SanitizerKind::Thread) ||
+  // Enable TBAA when ctir is enabled for debugging.
+  if (LangOpts.Sanitize.has(SanitizerKind::Thread) || CodeGenOpts.CTIR ||
       (!CodeGenOpts.RelaxedAliasing && CodeGenOpts.OptimizationLevel > 0))
     TBAA.reset(new CodeGenTBAA(Context, TheModule, CodeGenOpts, getLangOpts(),
                                getCXXABI().getMangleContext()));
@@ -150,6 +152,16 @@ CodeGenModule::CodeGenModule(ASTContext &C, const HeaderSearchOptions &HSO,
   if (CodeGenOpts.getDebugInfo() != codegenoptions::NoDebugInfo ||
       CodeGenOpts.EmitGcovArcs || CodeGenOpts.EmitGcovNotes)
     DebugInfo.reset(new CGDebugInfo(*this));
+
+  // Emit ctir.
+  if (CodeGenOpts.CTIR) {
+    CTIR::enable(DebugInfo.get() ? DebugInfo.get() : new CGDebugInfo(*this));
+    M.addModuleFlag(llvm::Module::ModFlagBehavior::Warning, CTIR::MDName,
+                    (uint32_t)1);
+  } else {
+    M.addModuleFlag(llvm::Module::ModFlagBehavior::Override, CTIR::MDName,
+                    (uint32_t)0);
+  }
 
   Block.GlobalUniqueCount = 0;
 
@@ -632,6 +644,11 @@ void CodeGenModule::Release() {
 
   if (DebugInfo)
     DebugInfo->finalize();
+
+  if (getCodeGenOpts().CTIR) {
+    // If DebugInfo was null, ctir was given a CGDebugInfo only it knew of.
+      CTIR::finish(!DebugInfo);
+  }
 
   if (getCodeGenOpts().EmitVersionIdentMetadata)
     EmitVersionIdentMetadata();
@@ -3527,6 +3544,8 @@ CodeGenModule::GetOrCreateLLVMGlobal(StringRef MangledName,
 
   // Handle things which are present even on external declarations.
   if (D) {
+    CTIR::setMetadata(GV, D->getType());
+
     if (LangOpts.OpenMP && !LangOpts.OpenMPSimd)
       getOpenMPRuntime().registerTargetGlobalVariable(D, GV);
 

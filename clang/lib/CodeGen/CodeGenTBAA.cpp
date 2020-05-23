@@ -187,7 +187,9 @@ llvm::MDNode *CodeGenTBAA::getTypeInfoHelper(const Type *Ty) {
 
 llvm::MDNode *CodeGenTBAA::getTypeInfo(QualType QTy) {
   // At -O0 or relaxed aliasing, TBAA is not emitted for regular types.
-  if (CodeGenOpts.OptimizationLevel == 0 || CodeGenOpts.RelaxedAliasing)
+  // Emit TBAA for ctir for debugging.
+  if ((CodeGenOpts.OptimizationLevel == 0 || CodeGenOpts.RelaxedAliasing)
+      && !CodeGenOpts.CTIR)
     return nullptr;
 
   // If the type has the may_alias attribute (even on a typedef), it is

@@ -2172,6 +2172,7 @@ public:
                                        AlignmentSource::Type) {
     LValue RefLVal = MakeAddrLValue(RefAddr, RefTy, LValueBaseInfo(Source),
                                     CGM.getTBAAAccessInfo(RefTy));
+    RefLVal.setCTIRType(RefTy);
     return EmitLoadOfReferenceLValue(RefLVal);
   }
 
@@ -3442,7 +3443,9 @@ public:
   llvm::Value *EmitLoadOfScalar(Address Addr, bool Volatile, QualType Ty,
                                 SourceLocation Loc, LValueBaseInfo BaseInfo,
                                 TBAAAccessInfo TBAAInfo,
-                                bool isNontemporal = false);
+                                bool isNontemporal = false,
+                                bool hasCTIRType = false,
+                                QualType CTIRType = QualType());
 
   /// EmitLoadOfScalar - Load a scalar value from an address, taking
   /// care to appropriately convert from the memory representation to
@@ -3456,15 +3459,20 @@ public:
   void EmitStoreOfScalar(llvm::Value *Value, Address Addr,
                          bool Volatile, QualType Ty,
                          AlignmentSource Source = AlignmentSource::Type,
-                         bool isInit = false, bool isNontemporal = false) {
+                         bool isInit = false, bool isNontemporal = false,
+                         bool hasCTIRType = false,
+                         QualType CTIRType = QualType()) {
     EmitStoreOfScalar(Value, Addr, Volatile, Ty, LValueBaseInfo(Source),
-                      CGM.getTBAAAccessInfo(Ty), isInit, isNontemporal);
+                      CGM.getTBAAAccessInfo(Ty), isInit, isNontemporal,
+                      hasCTIRType, CTIRType);
   }
 
   void EmitStoreOfScalar(llvm::Value *Value, Address Addr,
                          bool Volatile, QualType Ty,
                          LValueBaseInfo BaseInfo, TBAAAccessInfo TBAAInfo,
-                         bool isInit = false, bool isNontemporal = false);
+                         bool isInit = false, bool isNontemporal = false,
+                         bool hasCTIRType = false,
+                         QualType CTIRType = QualType());
 
   /// EmitStoreOfScalar - Store a scalar value to an address, taking
   /// care to appropriately convert from the memory representation to

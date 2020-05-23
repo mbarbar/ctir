@@ -19,6 +19,7 @@
 #include "CodeGenFunction.h"
 #include "CodeGenModule.h"
 #include "ConstantEmitter.h"
+#include "CTIR.h"
 #include "PatternInit.h"
 #include "TargetInfo.h"
 #include "clang/AST/ASTContext.h"
@@ -1489,6 +1490,9 @@ CodeGenFunction::EmitAutoVarAlloca(const VarDecl &D) {
       address = CreateTempAlloca(allocaTy, allocaAlignment, D.getName(),
                                  /*ArraySize=*/nullptr, &AllocaAddr);
 
+      // ctir-TODO: check isEscapingByRef?
+      CTIR::setMetadata(address.getPointer(), Ty);
+
       // Don't emit lifetime markers for MSVC catch parameters. The lifetime of
       // the catch parameter starts in the catchpad instruction, and we can't
       // insert code in those basic blocks.
@@ -1546,6 +1550,7 @@ CodeGenFunction::EmitAutoVarAlloca(const VarDecl &D) {
     // Allocate memory for the array.
     address = CreateTempAlloca(llvmTy, alignment, "vla", VlaSize.NumElts,
                                &AllocaAddr);
+    CTIR::setMetadata(address.getPointer(), Ty);
 
     // If we have debug info enabled, properly describe the VLA dimensions for
     // this type by registering the vla size expression for each of the

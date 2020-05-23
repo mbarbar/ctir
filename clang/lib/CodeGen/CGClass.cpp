@@ -15,6 +15,7 @@
 #include "CGDebugInfo.h"
 #include "CGRecordLayout.h"
 #include "CodeGenFunction.h"
+#include "CTIR.h"
 #include "TargetInfo.h"
 #include "clang/AST/Attr.h"
 #include "clang/AST/CXXInheritance.h"
@@ -2492,6 +2493,16 @@ void CodeGenFunction::InitializeVTablePointer(const VPtr &Vptr) {
           ->getPointerTo()
           ->getPointerTo();
   VTableField = Builder.CreateBitCast(VTableField, VTablePtrTy->getPointerTo());
+  // Negation of the condition above. We only need to annotate one cast, and the
+  // one which is the start of the object (i.e. no gep) is good enough. It occurs
+  // after calling all base classes.
+  const CXXConstructorDecl *ConsDecl =
+      llvm::dyn_cast<CXXConstructorDecl>(CurFuncDecl);
+  if (ConsDecl && !(!NonVirtualOffset.isZero() || VirtualOffset)) {
+    QualType ConsType = ConsDecl->getThisType()->getPointeeType();
+    CTIR::setMetadata(VTableField.getPointer(), ConsType, CTIR::VTInitMDName);
+  }
+
   VTableAddressPoint = Builder.CreateBitCast(VTableAddressPoint, VTablePtrTy);
 
   llvm::StoreInst *Store = Builder.CreateStore(VTableAddressPoint, VTableField);

@@ -20,6 +20,7 @@
 #include "CodeGenFunction.h"
 #include "CodeGenModule.h"
 #include "ConstantEmitter.h"
+#include "CTIR.h"
 #include "TargetInfo.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Attr.h"
@@ -1639,7 +1640,9 @@ llvm::Value *CodeGenFunction::EmitLoadOfScalar(Address Addr, bool Volatile,
                                                SourceLocation Loc,
                                                LValueBaseInfo BaseInfo,
                                                TBAAAccessInfo TBAAInfo,
-                                               bool isNontemporal) {
+                                               bool isNontemporal,
+                                               bool hasCTIRType,
+                                               QualType CTIRType) {
   if (!CGM.getCodeGenOpts().PreserveVec3Type) {
     // For better performance, handle vector loads differently.
     if (Ty->isVectorType()) {
@@ -1677,6 +1680,10 @@ llvm::Value *CodeGenFunction::EmitLoadOfScalar(Address Addr, bool Volatile,
     llvm::MDNode *Node = llvm::MDNode::get(
         Load->getContext(), llvm::ConstantAsMetadata::get(Builder.getInt32(1)));
     Load->setMetadata(CGM.getModule().getMDKindID("nontemporal"), Node);
+  }
+
+  if (hasCTIRType) {
+    CTIR::setMetadata(Load, CTIRType);
   }
 
   CGM.DecorateInstructionWithTBAA(Load, TBAAInfo);
@@ -1720,7 +1727,8 @@ void CodeGenFunction::EmitStoreOfScalar(llvm::Value *Value, Address Addr,
                                         bool Volatile, QualType Ty,
                                         LValueBaseInfo BaseInfo,
                                         TBAAAccessInfo TBAAInfo,
-                                        bool isInit, bool isNontemporal) {
+                                        bool isInit, bool isNontemporal,
+                                        bool hasCTIRType, QualType CTIRType) {
   if (!CGM.getCodeGenOpts().PreserveVec3Type) {
     // Handle vectors differently to get better performance.
     if (Ty->isVectorType()) {
@@ -1761,6 +1769,10 @@ void CodeGenFunction::EmitStoreOfScalar(llvm::Value *Value, Address Addr,
     Store->setMetadata(CGM.getModule().getMDKindID("nontemporal"), Node);
   }
 
+  if (hasCTIRType) {
+    CTIR::setMetadata(Store, CTIRType);
+  }
+
   CGM.DecorateInstructionWithTBAA(Store, TBAAInfo);
 }
 
@@ -1768,7 +1780,8 @@ void CodeGenFunction::EmitStoreOfScalar(llvm::Value *value, LValue lvalue,
                                         bool isInit) {
   EmitStoreOfScalar(value, lvalue.getAddress(*this), lvalue.isVolatile(),
                     lvalue.getType(), lvalue.getBaseInfo(),
-                    lvalue.getTBAAInfo(), isInit, lvalue.isNontemporal());
+                    lvalue.getTBAAInfo(), isInit, lvalue.isNontemporal(),
+                    lvalue.hasCTIRType(), lvalue.getCTIRType());
 }
 
 /// EmitLoadOfLValue - Given an expression that represents a value lvalue, this
@@ -1797,7 +1810,13 @@ RValue CodeGenFunction::EmitLoadOfLValue(LValue LV, SourceLocation Loc) {
     assert(!LV.getType()->isFunctionType());
 
     // Everything needs a load.
-    return RValue::get(EmitLoadOfScalar(LV, Loc));
+    RValue RV = RValue::get(EmitLoadOfScalar(LV, Loc));
+    if (LV.hasCTIRType()) {
+      // Definitely a scalar because get() is for scalars.
+      CTIR::setMetadata(RV.getScalarVal(), LV.getCTIRType());
+    }
+
+    return RV;
   }
 
   if (LV.isVectorElt()) {
@@ -2325,6 +2344,10 @@ CodeGenFunction::EmitLoadOfReference(LValue RefLVal,
                                      TBAAAccessInfo *PointeeTBAAInfo) {
   llvm::LoadInst *Load =
       Builder.CreateLoad(RefLVal.getAddress(*this), RefLVal.isVolatile());
+  if (RefLVal.hasCTIRType()) {
+    CTIR::setMetadata(Load, RefLVal.getCTIRType());
+  }
+
   CGM.DecorateInstructionWithTBAA(Load, RefLVal.getTBAAInfo());
 
   CharUnits Align = getNaturalTypeAlignment(RefLVal.getType()->getPointeeType(),
@@ -2558,7 +2581,10 @@ LValue CodeGenFunction::EmitDeclRefLValue(const DeclRefExpr *E) {
                                     /* forPointeeType= */ true);
         Addr = Address(Val, Alignment);
       }
-      return MakeAddrLValue(Addr, T, AlignmentSource::Decl);
+
+      LValue LV = MakeAddrLValue(Addr, T, AlignmentSource::Decl);
+      LV.setCTIRType(T);
+      return LV;
     }
 
     // FIXME: Handle other kinds of non-odr-use DeclRefExprs.
@@ -2662,6 +2688,10 @@ LValue CodeGenFunction::EmitDeclRefLValue(const DeclRefExpr *E) {
         EmitLoadOfReferenceLValue(addr, VD->getType(), AlignmentSource::Decl) :
         MakeAddrLValue(addr, T, AlignmentSource::Decl);
 
+    if (VD->getType()->isReferenceType()) {
+      LV.setCTIRType(LV.getType());
+    }
+
     bool isLocalStorage = VD->hasLocalStorage();
 
     bool NonGCable = isLocalStorage &&
@@ -2719,6 +2749,7 @@ LValue CodeGenFunction::EmitUnaryOpLValue(const UnaryOperator *E) {
         getLangOpts().getGC() != LangOptions::NonGC &&
         LV.isObjCWeak())
       LV.setNonGC(!E->isOBJCGCCandidate(getContext()));
+    LV.setCTIRType(T);
     return LV;
   }
   case UO_Real:
@@ -3589,7 +3620,7 @@ LValue CodeGenFunction::EmitArraySubscriptExpr(const ArraySubscriptExpr *E,
     Addr = emitArraySubscriptGEP(*this, Addr, Idx, vla->getElementType(),
                                  !getLangOpts().isSignedOverflowDefined(),
                                  SignedIndices, E->getExprLoc());
-
+    CTIR::setMetadata(Addr.getPointer(), E->getType());
   } else if (const ObjCObjectType *OIT = E->getType()->getAs<ObjCObjectType>()){
     // Indexing over an interface, as in "NSString *P; P[4];"
 
@@ -3644,6 +3675,7 @@ LValue CodeGenFunction::EmitArraySubscriptExpr(const ArraySubscriptExpr *E,
         E->getExprLoc(), &arrayType, E->getBase());
     EltBaseInfo = ArrayLV.getBaseInfo();
     EltTBAAInfo = CGM.getTBAAInfoForSubobject(ArrayLV, E->getType());
+    CTIR::setMetadata(Addr.getPointer(), Array->getType());
   } else {
     // The base must be a pointer; emit it with an estimate of its alignment.
     Addr = EmitPointerWithAlignment(E->getBase(), &EltBaseInfo, &EltTBAAInfo);
@@ -3653,6 +3685,7 @@ LValue CodeGenFunction::EmitArraySubscriptExpr(const ArraySubscriptExpr *E,
                                  !getLangOpts().isSignedOverflowDefined(),
                                  SignedIndices, E->getExprLoc(), &ptrType,
                                  E->getBase());
+    CTIR::setMetadata(Addr.getPointer(), E->getBase()->getType());
   }
 
   LValue LV = MakeAddrLValue(Addr, E->getType(), EltBaseInfo, EltTBAAInfo);
@@ -3941,6 +3974,7 @@ LValue CodeGenFunction::EmitMemberExpr(const MemberExpr *E) {
   } else
     BaseLV = EmitCheckedLValue(BaseExpr, TCK_MemberAccess);
 
+  BaseLV.setCTIRType(BaseLV.getType());
   NamedDecl *ND = E->getMemberDecl();
   if (auto *Field = dyn_cast<FieldDecl>(ND)) {
     LValue LV = EmitLValueForField(BaseLV, Field);
@@ -4065,9 +4099,13 @@ LValue CodeGenFunction::EmitLValueForField(LValue base,
     const RecordDecl *rec = field->getParent();
     if (!IsInPreservedAIRegion &&
         (!getDebugInfo() || !rec->hasAttr<BPFPreserveAccessIndexAttr>())) {
-      if (Idx != 0)
+      if (Idx != 0) {
         // For structs, we GEP to the field that the record layout suggests.
         Addr = Builder.CreateStructGEP(Addr, Idx, field->getName());
+        if (base.hasCTIRType()) {
+          CTIR::setMetadata(Addr.getPointer(), base.getCTIRType());
+        }
+      }
     } else {
       llvm::DIType *DbgInfo = getDebugInfo()->getOrCreateRecordType(
           getContext().getRecordType(rec), rec->getLocation());
@@ -4142,6 +4180,7 @@ LValue CodeGenFunction::EmitLValueForField(LValue base,
   }
 
   unsigned RecordCVR = base.getVRQualifiers();
+  QualType CTIRFieldType;
   if (rec->isUnion()) {
     // For unions, there is no pointer adjustment.
     if (CGM.getCodeGenOpts().StrictVTablePointers &&
@@ -4165,6 +4204,7 @@ LValue CodeGenFunction::EmitLValueForField(LValue base,
     if (FieldType->isReferenceType())
       addr = Builder.CreateElementBitCast(
           addr, CGM.getTypes().ConvertTypeForMem(FieldType), field->getName());
+    CTIRFieldType = getContext().getRecordType(rec);
   } else {
     if (!IsInPreservedAIRegion &&
         (!getDebugInfo() || !rec->hasAttr<BPFPreserveAccessIndexAttr>()))
@@ -4173,12 +4213,21 @@ LValue CodeGenFunction::EmitLValueForField(LValue base,
     else
       // Remember the original struct field index
       addr = emitPreserveStructAccess(*this, addr, field);
+
+    if (base.hasCTIRType()) {
+      // The preserve.struct.access.index intrinsic will be annotated with this
+      // exact same type anyway; no harm but a bit of space.
+      CTIR::setMetadata(addr.getPointer(), base.getCTIRType());
+    }
+
+    CTIRFieldType = FieldType;
   }
 
   // If this is a reference field, load the reference right now.
   if (FieldType->isReferenceType()) {
     LValue RefLVal =
         MakeAddrLValue(addr, FieldType, FieldBaseInfo, FieldTBAAInfo);
+    RefLVal.setCTIRType(FieldType);
     if (RecordCVR & Qualifiers::Volatile)
       RefLVal.getQuals().addVolatile();
     addr = EmitLoadOfReference(RefLVal, &FieldBaseInfo, &FieldTBAAInfo);
@@ -4200,6 +4249,10 @@ LValue CodeGenFunction::EmitLValueForField(LValue base,
 
   LValue LV = MakeAddrLValue(addr, FieldType, FieldBaseInfo, FieldTBAAInfo);
   LV.getQuals().addCVRQualifiers(RecordCVR);
+  // Set the type for the field access.
+  if (base.hasCTIRType()) {
+    LV.setCTIRType(CTIRFieldType);
+  }
 
   // __weak attribute on a field is ignored.
   if (LV.getQuals().getObjCGCAttr() == Qualifiers::Weak)

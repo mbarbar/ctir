@@ -2023,6 +2023,8 @@ def gdwarf_4 : Flag<["-"], "gdwarf-4">, Group<g_Group>,
   HelpText<"Generate source-level debug information with dwarf version 4">;
 def gdwarf_5 : Flag<["-"], "gdwarf-5">, Group<g_Group>,
   HelpText<"Generate source-level debug information with dwarf version 5">;
+def ctir : Flag<["-"], "ctir">, Group<g_Group>,
+  HelpText<"Attach C/C++ types to LLVM IR">;
 
 def gcodeview : Flag<["-"], "gcodeview">,
   HelpText<"Generate CodeView debug information">,

@@ -769,6 +769,7 @@ static bool ParseCodeGenArgs(CodeGenOptions &Opts, ArgList &Args, InputKind IK,
   Opts.DebugExplicitImport = Args.hasArg(OPT_dwarf_explicit_import);
   Opts.DebugFwdTemplateParams = Args.hasArg(OPT_debug_forward_template_params);
   Opts.EmbedSource = Args.hasArg(OPT_gembed_source);
+  Opts.CTIR = Args.hasArg(OPT_ctir_cc1);
 
   Opts.ForceDwarfFrameSection =
       Args.hasFlag(OPT_fforce_dwarf_frame, OPT_fno_force_dwarf_frame, false);

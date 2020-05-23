@@ -4499,6 +4499,10 @@ void Clang::ConstructJob(Compilation &C, const JobAction &JA,
   Args.AddLastArg(CmdArgs, options::OPT_ffine_grained_bitfield_accesses,
                   options::OPT_fno_fine_grained_bitfield_accesses);
 
+  if (Args.hasArg(options::OPT_ctir)) {
+    CmdArgs.push_back("-ctir-cc1");
+  }
+
   // Handle segmented stacks.
   if (Args.hasArg(options::OPT_fsplit_stack))
     CmdArgs.push_back("-split-stacks");

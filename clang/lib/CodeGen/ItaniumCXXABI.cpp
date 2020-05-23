@@ -23,6 +23,7 @@
 #include "CGVTables.h"
 #include "CodeGenFunction.h"
 #include "CodeGenModule.h"
+#include "CTIR.h"
 #include "TargetInfo.h"
 #include "clang/AST/Attr.h"
 #include "clang/AST/Mangle.h"
@@ -1782,6 +1783,8 @@ llvm::GlobalVariable *ItaniumCXXABI::getAddrOfVTable(const CXXRecordDecl *RD,
       Name, VTableType, llvm::GlobalValue::ExternalLinkage,
       getContext().toCharUnitsFromBits(PAlign).getQuantity());
   VTable->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global);
+  CTIR::setMetadata(VTable, CGM.getContext().getTypeDeclType(RD),
+      CTIR::VTMDName);
 
   CGM.setGVProperties(VTable, RD);
 

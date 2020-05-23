@@ -12,6 +12,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "CGCall.h"
+#include "CTIR.h"
 #include "ABIInfo.h"
 #include "CGBlocks.h"
 #include "CGCXXABI.h"
@@ -4412,6 +4413,25 @@ RValue CodeGenFunction::EmitCall(const CGFunctionInfo &CallInfo,
                               BundleList);
     EmitBlock(Cont);
   }
+
+  // ctir-TODO! The second condition means virtual destructors are not handled.
+  if (Callee.isVirtual() && Callee.getVirtualCallExpr()) {
+    const CallExpr *CE = Callee.getVirtualCallExpr();
+
+    // This is a MemberExpr because it's a virtual call.
+    QualType BaseType;
+    if (const CXXMemberCallExpr *MCE = llvm::dyn_cast<CXXMemberCallExpr>(CE)) {
+      BaseType = MCE->getObjectType();
+    } else if (llvm::isa<CXXOperatorCallExpr>(CE)) {
+      assert(CallArgs.size() > 0);
+      BaseType = CE->getArg(0)->getType();
+    } else {
+      assert(false && "CTIR: unhandled virtual call");
+    }
+
+    CTIR::setMetadata(CI, BaseType);
+  }
+
   if (callOrInvoke)
     *callOrInvoke = CI;
 

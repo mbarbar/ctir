@@ -199,6 +199,8 @@ def compress_debug_sections : Flag<["-", "--"], "compress-debug-sections">,
     HelpText<"DWARF debug sections compression">;
 def compress_debug_sections_EQ : Joined<["-", "--"], "compress-debug-sections=">,
     HelpText<"DWARF debug sections compression type">;
+def ctir_cc1 : Flag<["-"], "ctir-cc1">,
+  HelpText<"Attach C/C++ types to LLVM IR">;
 def mno_exec_stack : Flag<["-"], "mnoexecstack">,
   HelpText<"Mark the file as not needing an executable stack">;
 def massembler_no_warn : Flag<["-"], "massembler-no-warn">,

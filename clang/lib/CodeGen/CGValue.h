@@ -187,6 +187,8 @@ class LValue {
   };
 
   QualType Type;
+  // Type for ctir annotation.
+  QualType CTIRType;
 
   // 'const' is unused here
   Qualifiers Quals;
@@ -194,6 +196,9 @@ class LValue {
   // The alignment to use when accessing this lvalue.  (For vector elements,
   // this is the alignment of the whole vector.)
   unsigned Alignment;
+
+  // Whether the CTIRType field has been set.
+  bool CTIRTypeSet:1;
 
   // objective-c's ivar
   bool Ivar:1;
@@ -230,6 +235,8 @@ private:
     assert((!Alignment.isZero() || Type->isIncompleteType()) &&
            "initializing l-value with zero alignment!");
     this->Type = Type;
+    // Explicitly set elsewhere.
+    this->CTIRType = QualType();
     this->Quals = Quals;
     const unsigned MaxAlign = 1U << 31;
     this->Alignment = Alignment.getQuantity() <= MaxAlign
@@ -239,6 +246,8 @@ private:
            "Alignment exceeds allowed max!");
     this->BaseInfo = BaseInfo;
     this->TBAAInfo = TBAAInfo;
+
+    this->CTIRTypeSet = false;
 
     // Initialize Objective-C flags.
     this->Ivar = this->ObjIsArray = this->NonGC = this->GlobalObjCRef = false;
@@ -262,6 +271,14 @@ public:
   }
 
   QualType getType() const { return Type; }
+
+  void setCTIRType(QualType CTIRType) {
+    this->CTIRType = CTIRType;
+    CTIRTypeSet = true;
+  }
+
+  QualType getCTIRType(void) const { return CTIRType; }
+  bool hasCTIRType(void) const { return CTIRTypeSet; }
 
   Qualifiers::ObjCLifetime getObjCLifetime() const {
     return Quals.getObjCLifetime();
