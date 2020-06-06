@@ -1,12 +1,11 @@
 # Build ctir clang.
 
-language: minimal
+language: shell
 
-matrix:
+jobs:
   include:
     - os: linux
       dist: bionic
-      sudo: required
       addons:
         apt:
           update: true
@@ -19,3 +18,13 @@ matrix:
         homebrew:
           packages:
             - llvm@9
+
+env:
+  - CC=clang-9
+  - CXX=clang++-9
+
+script: >
+  mkdir build;
+  cd build;
+  cmake ../llvm -DCMAKE_BUILD_TYPE=MinSizeRel -DLLVM_ENABLE_PROJECTS=clang -G "Unix Makefiles"
+  make -j4
