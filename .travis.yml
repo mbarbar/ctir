@@ -23,7 +23,6 @@ jobs:
 
 script: >
   ctir_version=`echo "$TRAVIS_TAG" | sed 's/^ctir-//'`;
-  # Don't run for tags that are not from ctir.
   echo $TRAVIS_TAG; echo $ctir_version; echo $TRAVIS_OS_NAME;
   if [ "$TRAVIS_TAG" = "$ctir_version" ]; then travis_terminate 0; fi;
   mkdir build;
