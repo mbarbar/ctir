@@ -1,7 +1,4 @@
-# Build ctir clang.
-
 language: shell
-
 jobs:
   include:
     - os: linux
@@ -28,4 +25,4 @@ script: >
   mkdir build;
   cd build;
   cmake ../llvm -DCMAKE_BUILD_TYPE=MinSizeRel -DLLVM_ENABLE_PROJECTS=clang -DLLVM_TARGETS_TO_BUILD="" -G "Unix Makefiles";
-  make -j8
+  make clang -j8
