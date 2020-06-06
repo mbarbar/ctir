@@ -27,5 +27,5 @@ jobs:
 script: >
   mkdir build;
   cd build;
-  cmake ../llvm -DCMAKE_BUILD_TYPE=MinSizeRel -DLLVM_ENABLE_PROJECTS=clang -G "Unix Makefiles";
+  cmake ../llvm -DCMAKE_BUILD_TYPE=MinSizeRel -DLLVM_ENABLE_PROJECTS=clang -DLLVM_TARGETS_TO_BUILD="" -DCLANG_ENABLE_STATIC_ANALYZER=OFF -G "Unix Makefiles";
   make -j8
