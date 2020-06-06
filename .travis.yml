@@ -22,7 +22,23 @@ jobs:
       env: CC=clang CXX=clang++
 
 script: >
+  ctir_version=`echo "$TRAVIS_TAG" | sed 's/^ctir-//'`;
+  # Don't run for tags that are not from ctir.
+  if [ "$TRAVIS_TAG" = "$ctir_version" ]; then travis_terminate 0; fi;
   mkdir build;
   cd build;
   cmake ../llvm -DCMAKE_BUILD_TYPE=MinSizeRel -DLLVM_ENABLE_PROJECTS=clang -DLLVM_TARGETS_TO_BUILD="" -G "Unix Makefiles";
-  make clang -j8
+  make clang -j8;
+  cd bin;
+  zip --symlink "ctir-clang-$ctir_version.zip" clang clang++ `find . -maxdepth 1 -regex '\./clang-[0-9]+'`;
+
+deploy:
+  provider: releases
+  skip_cleanup: true
+  file_glob: true
+  file: ctir-clang-*.zip
+  on:
+    tags: true
+  draft: true
+  api_key:
+    secure: CtR3fLzN7FRCre0Fw5D5CplHcOM7EwqzBitex0xnVl+OJsBS7bMTz7hmVzk76xIssMfEsLpYCbox0FfLdbougV8B5c1l4UnAw753o2CmN6kJKOOPvUK9ZBs6adktgCbTSVb/YPdUFSTZNHiFFY/CcVi5cc4GWv2LLzwfLzu2+qOmPxKVsm3yDl6g6fTJbEBfompt4eiVq1RYhoZDhUCXBn9FIJanOSE4KFGNYWeasKeYIWdRT6qIdYOtGxCjsbXhOpQh12mlE4ovSSJNp7Qiake2UMoZFK0/Ta1NGcoUpOAIpOoX8YnSBnr9aMzVkMp/ZELndQKG3EanGXCNfT2qGHRTLCB6NI7L6zKC08nAEMN9GDQN8UgAnSwmAlfbI0pCqIOAydwKxhZ5qXGqEfis3VDEQ36WJjv0rqE68yRnwfa50GhP9H8zG73nsCqqcCnycaIsszdWqYbrtR578Oghj0skIUpzRECCha6qt5iyQpuaNGnoHQsBebgxAWxY82srw/ojU4zDMK060TVuIh49p7EHiqZWA/2CJyGKER7mHulWyH3A1wA7pbGMvxp4wxm1hQ3Fh7xAc65tL5cseXFF2Vpj4qVlpjTZ1HA+O7VmEGQ+G/fOnGhagtGA3Nz0k6Fj2cbZyYJxjdT8rB9kXoDlFWguA5gyn5XVvRB73pV+VtI=
