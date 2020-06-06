@@ -24,8 +24,8 @@ jobs:
 script: >
   ctir_version=`echo "$TRAVIS_TAG" | sed 's/^ctir-//'`;
   # Don't run for tags that are not from ctir.
+  echo $TRAVIS_TAG; echo $ctir_version; echo $TRAVIS_OS_NAME;
   if [ "$TRAVIS_TAG" = "$ctir_version" ]; then travis_terminate 0; fi;
-  echo $TRAVIS_TAG; echo $ctir_version;
   mkdir build;
   cd build;
   cmake ../llvm -DCMAKE_BUILD_TYPE=MinSizeRel -DLLVM_ENABLE_PROJECTS=clang -DLLVM_TARGETS_TO_BUILD="" -G "Unix Makefiles";
