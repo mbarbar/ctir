@@ -18,13 +18,13 @@ jobs:
         homebrew:
           packages:
             - llvm@9
+            - cmake
 
 env:
-  - CC=clang-9
-  - CXX=clang++-9
+  - CC=clang-9 CXX=clang++-9
 
 script: >
   mkdir build;
   cd build;
-  cmake ../llvm -DCMAKE_BUILD_TYPE=MinSizeRel -DLLVM_ENABLE_PROJECTS=clang -G "Unix Makefiles"
+  cmake ../llvm -DCMAKE_BUILD_TYPE=MinSizeRel -DLLVM_ENABLE_PROJECTS=clang -G "Unix Makefiles";
   make -j4
