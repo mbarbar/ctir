@@ -12,6 +12,8 @@ jobs:
           packages:
             - clang-9
             - cmake
+            - zip
+      env: CC=clang-9 CXX=clang++-9
     - os: osx
       osx_image: xcode11.5
       addons:
@@ -19,9 +21,8 @@ jobs:
           packages:
             - llvm@9
             - cmake
-
-env:
-  - CC=clang-9 CXX=clang++-9
+            - zip
+      env: CC=clang CXX=clang++
 
 script: >
   mkdir build;
