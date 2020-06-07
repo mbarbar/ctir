@@ -23,15 +23,16 @@ jobs:
 
 script: >
   ctir_version=`echo "$TRAVIS_TAG" | sed 's/^ctir-//'`;
-  echo $TRAVIS_TAG; echo $ctir_version; echo $TRAVIS_OS_NAME;
   if [ "$TRAVIS_TAG" = "$ctir_version" ]; then travis_terminate 0; fi;
+  if [ "$TRAVIS_OS_NAME" = "linux" ]; then os="ubuntu"; elif [ "$TRAVIS_OS_NAME" = "osx" ]; then os="macos"; fi;
+  echo $TRAVIS_TAG; echo $ctir_version; echo $TRAVIS_OS_NAME; echo $os;
   mkdir build;
   cd build;
   cmake ../llvm -DCMAKE_BUILD_TYPE=MinSizeRel -DLLVM_ENABLE_PROJECTS=clang -DLLVM_TARGETS_TO_BUILD="" -G "Unix Makefiles";
   make clang -j8;
   cd bin;
   ls;
-  zip --symlink "ctir-clang-v$ctir_version-$TRAVIS_OS_NAME.zip" clang clang++ `find . -maxdepth 1 -regex '\./clang-[0-9][0-9]*'`;
+  zip --symlink "ctir-clang-v$ctir_version-$os.zip" clang clang++ `find . -maxdepth 1 -regex '\./clang-[0-9][0-9]*'`;
   mv ctir-clang*.zip ../..;
   cd ../..;
   zip -r "ctir-clang-v$ctir_version-source.zip" clang
