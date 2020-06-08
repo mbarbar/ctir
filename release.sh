@@ -2,9 +2,9 @@
 
 ctir_version=`echo "$TRAVIS_TAG" | sed 's/^ctir-//'`
 if [ "$TRAVIS_OS_NAME" = "linux" ]; then
-  os="ubuntu";
+  os="ubuntu18.04";
 elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
-  os="macos";
+  os="macos10.15";
 else
   echo "Bad OS?"
   travis_terminate 1
