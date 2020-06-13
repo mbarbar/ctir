@@ -15,18 +15,29 @@ echo "ctir_version   = $ctir_version"
 echo "TRAVIS_OS_NAME = $TRAVIS_OS_NAME"
 echo "os             = $os"
 
+mkdir build
+mkdir install
+
 # Build.
-mkdir build;
 cd build;
-cmake ../llvm -DCMAKE_BUILD_TYPE=MinSizeRel -DLLVM_ENABLE_PROJECTS=clang -DLLVM_TARGETS_TO_BUILD="" -G "Unix Makefiles";
+cmake "$TRAVIS_BUILD_DIR/llvm" -DCMAKE_BUILD_TYPE=MinSizeRel       \
+                               -DLLVM_ENABLE_PROJECTS=clang        \
+                               -DLLVM_TARGETS_TO_BUILD=""          \
+                               -DCMAKE_INSTALL_PREFIX="../install" \
+                               -G "Unix Makefiles";
 make clang -j8;
 
+# Install
+make install
+cd "$TRAVIS_BUILD_DIR/install"
+
 # Zip binaries.
-cd bin;
-ls;
-zip --symlink "ctir-clang-v$ctir_version-$os.zip" clang clang++ `find . -maxdepth 1 -regex '\./clang-[0-9][0-9]*'`;
-mv ctir-clang*.zip ../..;
+zip -r --symlink "ctir-clang-v$ctir_version-$os.zip" bin/clang               \
+                                                     bin/clang++             \
+                                                     `readlink -f bin/clang` \
+                                                     lib/clang
+mv ctir-clang*.zip "$TRAVIS_BUILD_DIR"
 
 # Zip source.
-cd ../..;
+cd "$TRAVIS_BUILD_DIR";
 zip -r "ctir-clang-v$ctir_version-source.zip" clang
