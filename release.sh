@@ -32,9 +32,10 @@ make install
 cd "$TRAVIS_BUILD_DIR/install"
 
 # Zip binaries.
-zip -r --symlink "ctir-clang-v$ctir_version-$os.zip" bin/clang               \
-                                                     bin/clang++             \
-                                                     `readlink -f bin/clang` \
+zip -r --symlink "ctir-clang-v$ctir_version-$os.zip" bin/clang                                              \
+                                                     bin/clang++                                            \
+                                                     `readlink -f bin/clang`                                \
+                                                     `find . -maxdepth 1 -regex '\./bin/clang-[0-9][0-9]*'` \
                                                      lib/clang
 mv ctir-clang*.zip "$TRAVIS_BUILD_DIR"
 
