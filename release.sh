@@ -28,7 +28,7 @@ cmake "$TRAVIS_BUILD_DIR/llvm" -DCMAKE_BUILD_TYPE=MinSizeRel       \
 make clang -j8;
 
 # Install
-make install
+make install -j8
 cd "$TRAVIS_BUILD_DIR/install"
 
 # Zip binaries.
