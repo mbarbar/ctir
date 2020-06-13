@@ -28,7 +28,7 @@ deploy:
   file_glob: true
   skip_cleanup: true
   file: ctir-clang-*.zip
-  api_key:
+  token:
     secure: C4ft91yInvXDv9b6n6CtzKmP3aRbT/5+r3265K5O7ZBISo7fdqlfepG1TN2xvElqA1GywvKR7TU4XOz6hQlluEKgX0+lj5PIu9vagSrmEKgKKPAaq41tEXBwSQM64n2A6lDOQ+gp0oibPOOLB+g/K0fCy3hig+LbFwyJYHWqvWDY2S1CJMxq41Rl/kEkJ4ldf9flvudvVes0ZrNC6ckmNVdbmioaMTyDaBfV/hSXXwSTfVQJh6ASS4cMr9JFxlNCrZLHmtEVClyBdtpvO5CnXyXCigiXMm/CkGv0ctl89S1veKoXfXHr+S9YP8NuzcY761kp6vqtX4halwlSkhLvSB9th/45lh9bbq5Ey6wFvXSbzE6d6K49wB11NyfM/gHYfOq83Bf08Go0/gmDxXqZ1lZxkamu5+4LGZoavZWReuhKssdBUBnCkg2GuavZ8Cbdm+MxjImy2Y2ouzW0cktsU2lQO86NvDXpuv1bOJWYDTyle2F+WC/Z0Ye215Q0ZVAp8Ljb6mjoIbcgN12xjnJfMv/MykFZOlX8ytqH+bm/y6jDThlhshQ7CON451gNMdAlmoPP80UFZDus5xu4yJLynVPgX7Ry7EWoajTI3OihVO8fXMSapO8ip4AIBUfMgtjTP+g5sIdtCV/Y2IuFuPwcYZPglWXwh3RPmMEk6Py6u3g=
   on:
     repo: mbarbar/ctir
