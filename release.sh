@@ -25,10 +25,10 @@ cmake "$TRAVIS_BUILD_DIR/llvm" -DCMAKE_BUILD_TYPE=MinSizeRel       \
                                -DLLVM_TARGETS_TO_BUILD=""          \
                                -DCMAKE_INSTALL_PREFIX="../install" \
                                -G "Unix Makefiles";
-make clang -j4;
+make clang -j8;
 
 # Install
-make install -j4
+make install -j8
 cd "$TRAVIS_BUILD_DIR/install"
 
 # Zip binaries.
