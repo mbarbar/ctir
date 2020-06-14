@@ -25,11 +25,11 @@ cmake "$TRAVIS_BUILD_DIR/llvm" -DCMAKE_BUILD_TYPE=MinSizeRel       \
                                -DLLVM_TARGETS_TO_BUILD=""          \
                                -DCMAKE_INSTALL_PREFIX="../install" \
                                -DLLVM_USE_LINKER="lld"             \
-                               -G "Unix Makefiles";
-make clang -j8;
+                               -G "Ninja";
+ninja clang;
 
 # Install
-make install -j8
+ninja install
 cd "$TRAVIS_BUILD_DIR/install"
 
 # Zip binaries.
