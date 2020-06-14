@@ -10,7 +10,7 @@ jobs:
             - clang-9
             - cmake
             - zip
-            - ninja
+            - ninja-build
       env: CC=clang-9 CXX=clang++-9
     - os: osx
       osx_image: xcode11.5
