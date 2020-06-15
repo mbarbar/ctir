@@ -23,6 +23,10 @@ cd build;
 cmake "$TRAVIS_BUILD_DIR/llvm" -DCMAKE_BUILD_TYPE=MinSizeRel       \
                                -DLLVM_ENABLE_PROJECTS=clang        \
                                -DLLVM_TARGETS_TO_BUILD="X86"       \
+                               -DLLVM_ENABLE_BINDINGS="OFF"        \
+                               -DCLANG_BUILD_TOOLS="OFF"           \
+                               -DLLVM_BUILD_TOOLS="OFF"            \
+                               -DLLVM_BUILD_UTILS="OFF"            \
                                -DCMAKE_INSTALL_PREFIX="../install" \
                                -G "Ninja";
 ninja clang;
