@@ -2,9 +2,9 @@
 
 ctir_version=`echo "$TRAVIS_TAG" | sed 's/^ctir-//'`
 if [ "$TRAVIS_OS_NAME" = "linux" ]; then
-  os="ubuntu18.04";
+  os="ubuntu18.04"
 elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
-  os="macos10.15";
+  os="macos10.15"
 else
   echo "Bad OS?"
   travis_terminate 1
@@ -19,13 +19,12 @@ mkdir build
 mkdir install
 
 # Build.
-cd build;
-cmake "$TRAVIS_BUILD_DIR/llvm" -DCMAKE_BUILD_TYPE=MinSizeRel       \
-                               -DLLVM_ENABLE_PROJECTS=clang        \
-                               -DLLVM_TARGETS_TO_BUILD="X86"       \
-                               -DCMAKE_INSTALL_PREFIX="../install" \
-                               -G "Ninja";
-ninja clang;
+cd build
+cmake "$TRAVIS_BUILD_DIR/llvm" -DCMAKE_BUILD_TYPE=MinSizeRel \
+                               -DLLVM_ENABLE_PROJECTS=clang  \
+                               -DLLVM_TARGETS_TO_BUILD="X86" \
+                               -G "Ninja"
+ninja clang
 
 # Zip binaries.
 zip -r --symlink "ctir-clang-v$ctir_version-$os.zip" bin/clang                                                  \
@@ -35,5 +34,5 @@ zip -r --symlink "ctir-clang-v$ctir_version-$os.zip" bin/clang                  
 mv ctir-clang*.zip "$TRAVIS_BUILD_DIR"
 
 # Zip source.
-cd "$TRAVIS_BUILD_DIR";
+cd "$TRAVIS_BUILD_DIR"
 zip -r "ctir-clang-v$ctir_version-source.zip" clang
